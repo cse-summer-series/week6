@@ -11,9 +11,55 @@ uint8_t char_to_num(unsigned char c) {
     if(c >= '0' && c <= '9') { return c - 48; }
 }
 
+int check_password(
+    unsigned char* potential_passwd,
+    int length,
+    unsigned char* hash,
+    unsigned long* attempts,
+    unsigned char* tocheck,
+    unsigned char* user_input
+) {
+    // we have a potential password to check
+    MD5(potential_passwd, length, hash); // result stored in hash
+    potential_passwd[length] = '\0';
+    *attempts += 1;
+    if(strncmp(hash, tocheck, 16) == 0) {
+        printf("Found it! MD5(%s) = %s\n", potential_passwd, user_input);
+        printf("It took %ld attempts\n", *attempts);
+        return 1;
+    }
+    else {
+        return 0;
+    }
+}
+
+int check_passwdaz_at(
+    int index,
+    unsigned char* potential_passwd,
+    int length,
+    unsigned char* hash,
+    unsigned long* attempts,
+    unsigned char* tocheck,
+    unsigned char* user_input
+) {
+    int result;
+    for(char c = 'a'; c <= 'z'; c += 1) {
+        potential_passwd[index] = c;
+        if(index == length - 1) {
+            result = check_password(potential_passwd, length, hash, attempts, tocheck, user_input);
+        }
+        else {
+            result = check_passwdaz_at(index + 1, potential_passwd, length, hash, attempts, tocheck, user_input);
+        }
+        if(result) { return result; }
+    }
+    return 0;
+
+}
+
 int main(int argc, char** argv) {
     // Big assumption – only finds 4-character passwords
-    unsigned char potential_passwd[4];
+    unsigned char potential_passwd[1000];
     unsigned char tocheck[16];
     unsigned char* user_input = argv[1];
     for(int i = 0; i < 16; i += 1) {
@@ -25,27 +71,14 @@ int main(int argc, char** argv) {
     unsigned long attempts = 0;
     // Make this work for all keyboard characters (a-zA-Z0-9!@#$%^&*();',./:"<>?")
     // Verify that you can find 4-length password with other characters
-    for(char c1 = 'a'; c1 <= 'z'; c1 += 1) {
-        potential_passwd[0] = c1;
-        for(char c2 = 'a'; c2 <= 'z'; c2 += 1) {
-            potential_passwd[1] = c2;
-            for(char c3 = 'a'; c3 <= 'z'; c3 += 1) {
-                potential_passwd[2] = c3;
-                for(char c4 = 'a'; c4 <= 'z'; c4 += 1) {
-                    potential_passwd[3] = c4;
-                    // we have a potential password to check
-                    MD5(potential_passwd, 4, hash); // result stored in hash
-                    attempts += 1;
-                    if(strncmp(hash, tocheck, 16) == 0) {
-                        printf("Found it! MD5(%.4s) = %s\n", potential_passwd, user_input);
-                        printf("It took %ld attempts\n", attempts);
-                        return 0;
-                    }
-                }
-            }
-        }
+    int current_length = 1;
+    int result = 0;
+    while(current_length < 1000) {
+        result = check_passwdaz_at(0, potential_passwd, current_length, hash, &attempts, tocheck, user_input);
+        if(result) { break; }
+        current_length += 1;
     }
-    printf("Did not find a matching hash");
+    if(!result) { printf("Did not find a matching hash\n"); }
 
 }
 
