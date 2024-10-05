@@ -58,7 +58,6 @@ int check_passwdaz_at(
 }
 
 int main(int argc, char** argv) {
-    // Big assumption – only finds 4-character passwords
     unsigned char potential_passwd[1000];
     unsigned char tocheck[16];
     unsigned char* user_input = argv[1];
